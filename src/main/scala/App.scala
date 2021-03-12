@@ -26,58 +26,20 @@ object App {
         line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1)(2)))
 
     val names = sc.textFile("archive/names.csv")
-      .map(line => (line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1)(0),
-        line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1)(1)))
+      .filter(line => line.length > 2 && line.substring(0, 2).equals("nm"))
+      .map(line => (line.split(",")(0), line.split(",")(1)))
 
     val movieRatings = USMoviesandGenre.join(ratings).map{case(k, (_, v2)) => (k,v2)}
 
     val actorRatings = movieRatings.join(movieActors).map{case(k, (v1, v2)) => (v2, v1.toDouble)}
-      .groupByKey().map({case (key, value) => (key, value.aggregate((0.0, 0.0))(
-      (x,y) => (x._1 + y, x._2 + 1),
-      (x,y) => (x._1 + y._1, x._2 + y._2)
-    ))}).map({case (key, value) => (value._1/value._2, key)})
-      .sortByKey(false).collect().map({case (key, value) => (value, key)})
+      .combineByKey(v => (v, 1.0),
+      (acc: (Double, Double), v) => (acc._1 + v, acc._2 + 1),
+      (acc1: (Double, Double), acc2: (Double, Double)) => (acc1._1 + acc2._1,
+        acc1._2 + acc2._2))
+      .map { case (key, value) => (key, value._1 * 1.0 / value._2) }
+      .join(names)
+      .map({case (key, value) => (value._2, value._1)})
+      .sortBy(x => x._2,false)
       .take(10).foreach(println(_))
-
-//    val tvShows = sc.textFile("netflixIMDB.csv")
-//      .filter(line => line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1)(1).equals("TV Show"))
-//      .filter(line => !line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1)(4).equals("bam"))
-//      .filter(line => line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1)(5).contains("United States"))
-//      .map(line => (line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1)(4),
-//        line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1)(8)))
-//      .flatMap({case (key, value) => key.split(",")
-//        .map(actor => (actor.trim().replace("\"", ""), value.toDouble))})
-//      .groupByKey()
-//      .map({case (key, value) => (key, value.aggregate((0.0, 0.0))(
-//        (x,y) => (x._1 + y, x._2 + 1),
-//        (x,y) => (x._1 + y._1, x._2 + y._2)
-//      ))})
-//      .map({case (key, value) => (value._1/value._2, key)})
-//      .sortByKey(false)
-//      .collect()
-//      .map({case (key, value) => (value, key)})
-//      .take(10)
-//      .foreach(println(_))
-//
-//    val movie = sc.textFile("netflixIMDB.csv")
-//      .filter(line => line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1)(1).equals("Movie"))
-//      .filter(line => !line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1)(4).equals("bam"))
-//      .filter(line => line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1)(5).contains("United States"))
-//
-//      .map(line => (line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1)(4),
-//        line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1)(8)))
-//      .flatMap({case (key, value) => key.split(",")
-//        .map(actor => (actor.trim().replace("\"", ""), value.toDouble))})
-//      .groupByKey()
-//      .map({case (key, value) => (key, value.aggregate((0.0, 0.0))(
-//        (x,y) => (x._1 + y, x._2 + 1),
-//        (x,y) => (x._1 + y._1, x._2 + y._2)
-//      ))})
-//      .map({case (key, value) => (value._1/value._2, key)})
-//      .sortByKey(false)
-//      .collect()
-//      .map({case (key, value) => (value, key)})
-//      .take(10)
-//      .foreach(println(_))
   }
 }
