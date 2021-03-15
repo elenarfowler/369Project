@@ -68,8 +68,8 @@ object App {
     println(m + " " + b)
     // m = 1.2917395971535428E-8
     // b = 5.478972809028917
-    // a movie with 125 million budget (HP and Sorcerer's Stone) would be predictoed to have a 7.08 rating (actual is 7.6)
-    // a movie with 250 million budget (HP and the DH) would be predictoed to have a 8.699 rating (actual is 8.1)
+    // a movie with 125 million budget (HP and Sorcerer's Stone) would be predicted to have a 7.08 rating (actual is 7.6)
+    // a movie with 250 million budget (HP and the DH) would be predicted to have a 8.699 rating (actual is 8.1)
     // a movie with 356 million budget (Endgame) would be predicted to have a 10.069 rating lol (actual is 8.4)
   }
 }

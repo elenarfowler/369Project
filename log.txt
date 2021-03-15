@@ -1,0 +1,9 @@
+Elena
+
+
+Elisha
+- 3/12/21: joined files to get user id and their corresponding movie ratings (30 minutes)
+- 3/14/21: did simple linear regression to find an equation for prediction (1.5 hours)
+- 3/15/21: created linear regression and major obstacles slide for presentation and log.txt (20 minutes)
+
+Kristina
