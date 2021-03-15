@@ -1,6 +1,7 @@
 
 import org.apache.log4j.{Level, Logger}
 import org.apache.spark.{SparkConf, SparkContext}
+import scala.math.pow
 
 object App {
 
@@ -41,5 +42,34 @@ object App {
       .map({case (key, value) => (value._2, value._1)})
       .sortBy(x => x._2,false)
       .take(10).foreach(println(_))
+
+    // Getting the linear regression formula for predicting ratings
+    val USMoviesandBudget = sc.textFile("archive/movies.csv")
+      .filter(line => line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1)(7).contains("USA"))
+      .filter(line => line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1)(16).contains("$"))
+      .filter(line => line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1)(3).toInt >= 2000)
+      .map(line => (line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1)(0).trim(),
+        line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1)(16).trim().replace("$", "")))
+
+    val movieBudgetRatings = USMoviesandBudget.join(ratings)
+      .map{case(k, (v1, v2)) => (v1.toFloat, v2.toFloat)}
+
+    val size = movieBudgetRatings.keys.count()
+    val budgetsMean = movieBudgetRatings.keys.sum()/size
+    val ratingsMean = movieBudgetRatings.values.sum()/size
+
+    val covariance = movieBudgetRatings
+      .map{case(k, v) => (k - budgetsMean.toFloat) * (v - ratingsMean.toFloat)}.reduce((x,y) => x + y)
+
+    val variance = movieBudgetRatings.keys.map(x => pow((x - budgetsMean), 2)).reduce((x,y) => x + y)
+
+    val m = covariance/variance
+    val b = ratingsMean - m * ratingsMean
+    println(m + " " + b)
+    // m = 1.2917395971535428E-8
+    // b = 5.478972809028917
+    // a movie with 125 million budget (HP and Sorcerer's Stone) would be predictoed to have a 7.08 rating (actual is 7.6)
+    // a movie with 250 million budget (HP and the DH) would be predictoed to have a 8.699 rating (actual is 8.1)
+    // a movie with 356 million budget (Endgame) would be predicted to have a 10.069 rating lol (actual is 8.4)
   }
 }
