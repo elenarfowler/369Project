@@ -1,5 +1,7 @@
 Elena
-
+- 3/11/21: debugged parsing input files for actors and getting ratings by actor name (1 hour)
+- 3/14/21: worked on function to predict movie rating based on list of cast members, output how the prediction was made (1.5 hours)
+- 3/15/21: worked on testing the rating prediction function to get an accuracy rate and decrease the time it takes to run (2 hours)
 
 Elisha
 - 3/12/21: joined files to get user id and their corresponding movie ratings (30 minutes)
