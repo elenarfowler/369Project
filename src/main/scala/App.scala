@@ -161,6 +161,42 @@ object App {
     // RMSE = 0.5250978331346486
   }
 
+  def predictingRatingsFromIncome(): Unit = {
+    // Getting the linear regression formula for predicting ratings
+    val USMoviesandIncome = sc.textFile("archive/movies.csv")
+      .filter(line => line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1)(7).contains("USA"))
+      .filter(line => line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1)(16).contains("$"))
+      .filter(line => line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1)(3).toInt >= 2000)
+      .map(line => (line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1)(0).trim(),
+        line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1)(18).trim().replace("$", "")))
+
+    val movieIncomeRatings = USMoviesandIncome.join(ratings).filter{case(k, (v1, v2)) => v1 != ""}
+      .map{case(k, (v1, v2)) => (v1.toFloat, v2.toFloat)}
+
+    val size = movieIncomeRatings.keys.count()
+    val budgetsMean = movieIncomeRatings.keys.sum()/size
+    val ratingsMean = movieIncomeRatings.values.sum()/size
+
+    val covariance = movieIncomeRatings
+      .map{case(k, v) => (k - budgetsMean.toFloat) * (v - ratingsMean.toFloat)}.reduce((x,y) => x + y)
+
+    val variance = movieIncomeRatings.keys.map(x => pow((x - budgetsMean), 2)).reduce((x,y) => x + y)
+
+    val m = covariance/variance
+    val b = ratingsMean - m * ratingsMean
+    println(m + " " + b)
+    // m = 1.657978853351012E-9
+    // b = 6.089139060925722
+
+    val movieIDBudgetRatings = USMoviesandIncome.join(ratings).filter{case(k, (v1, v2)) => v1 != ""}
+    val predictions = movieIDBudgetRatings.map{case(k, (budget,_)) => (k, m*budget.toFloat + b)}
+    val sum_error = movieIDBudgetRatings.map{case(k, (_,rating)) => (k, rating)}.join(predictions)
+      .map{case(k, (actual, prediction)) => (actual.toFloat, prediction)}.map(x => x._2 - x._1).sum()
+    val rmse = Math.sqrt(sum_error/size)
+    println(rmse)
+    // RMSE = 0.4019221935203453
+  }
+
   def findingTopRatedActors(): Unit = {
     val movieActors = sc.textFile("archive/title_principals.csv")
       .map(line => (line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1)(0),
@@ -186,17 +222,15 @@ object App {
 
   def main(args: Array[String]): Unit = {
 
-    //averageIncomeHighRating(sc)
+    averageIncomeHighRating(sc)
     // Global profit for audience score over 8.0: 3.907898231388889E8
     // Global profit for audience score between 6.0 and 8.0: 8.452461252132949E7
     // Global profit for audience score between 4.0 and 6.0: 2.903742218363764E7
     // Global profit for audience score under 4.0: 8560361.581460673
 
     predictingRatingsFromBudget()
-
+    predictingRatingsFromIncome()
     findingTopRatedActors()
-
-
 
   }
 
