@@ -30,11 +30,8 @@ object App {
     .map(line => (line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1)(0),
       line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1)(5)))
 
-  // statistics and stuff
   def averageBudgetRating(): Unit = {
-    //14=user rating, 16=budget 17=USgross 18=WorldGross (under movies)
-    // setting up
-    // rating, budget
+
     val USMoviesandBudgetRatings = sc.textFile("archive/movies.csv")
       .filter(line => line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1)(7).contains("USA"))
       .filter(line => line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1)(16).contains("$"))
@@ -48,6 +45,7 @@ object App {
     val sizeOver8 = over8.count()
     val averageBudgetOver8 = over8.values.sum() / sizeOver8
     println("Budget for audience score over 8.0: " + averageBudgetOver8)
+
     // movies with ratings between 6-8
     val btwn6n8 = USMoviesandBudgetRatings
       .filter(_._1 >= 6.0)
@@ -55,6 +53,7 @@ object App {
     val sizeBtwn6n8 = btwn6n8.count()
     val averageBudgetBtwn6n8 = btwn6n8.values.sum() / sizeBtwn6n8
     println("Budget for audience score between 6.0 and 8.0: " + averageBudgetBtwn6n8)
+
     // movies with ratings between 4-6
     val btwn4n6 = USMoviesandBudgetRatings
       .filter(_._1 >= 4.0)
@@ -72,7 +71,6 @@ object App {
   }
 
   //find average worldwide income of a highly rated movie (8+) (profits)
-  //14 = rating 18 = world income
   def averageIncomeHighRating(): Unit = {
     val USMoviesandIncomeRatings = sc.textFile("archive/movies.csv")
       .filter(line => line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1)(7).contains("USA"))
@@ -87,6 +85,7 @@ object App {
     val sizeOver8 = over8.count()
     val averageBudgetOver8 = over8.values.sum() / sizeOver8
     println("Global profit for audience score over 8.0: " + averageBudgetOver8)
+
     // movies with ratings between 6-8
     val btwn6n8 = USMoviesandIncomeRatings
       .filter(_._1 >= 6.0)
@@ -94,6 +93,7 @@ object App {
     val sizeBtwn6n8 = btwn6n8.count()
     val averageBudgetBtwn6n8 = btwn6n8.values.sum() / sizeBtwn6n8
     println("Global profit for audience score between 6.0 and 8.0: " + averageBudgetBtwn6n8)
+
     // movies with ratings between 4-6
     val btwn4n6 = USMoviesandIncomeRatings
       .filter(_._1 >= 4.0)
@@ -109,8 +109,8 @@ object App {
     val averageBudgetUnder4 = under4.values.sum() / sizeUnder4
     println("Global profit for audience score under 4.0: " + averageBudgetUnder4)
   }
+
   //find average rating based on income
-  //14 = rating 18 = world income
   def averageRatingBasedOnIncome(): Unit = {
     val USMoviesandIncomeRatings = sc.textFile("archive/movies.csv")
       .filter(line => line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1)(7).contains("USA"))
@@ -125,6 +125,7 @@ object App {
     val sizeOver8 = over8.count()
     val averageBudgetOver8 = over8.keys.sum() / sizeOver8
     println("Average rating for profit over $100,000,000: " + averageBudgetOver8)
+
     // avg rating btwn 50,000,000-100,000,000 (between 50mil and 100mil)
     val btwn6n8 = USMoviesandIncomeRatings
       .filter(_._2 >= 50000000)
@@ -132,6 +133,7 @@ object App {
     val sizeBtwn6n8 = btwn6n8.count()
     val averageBudgetBtwn6n8 = btwn6n8.keys.sum() / sizeBtwn6n8
     println("Average rating for profit between $50,000,000 - $100,000,000: " + averageBudgetBtwn6n8)
+
 //    avg rating btwn 10,000,000-50,000,000 (between 10mil and 50mil)
     val btwn4n6 = USMoviesandIncomeRatings
       .filter(_._2 >= 10000000)
@@ -139,6 +141,7 @@ object App {
     val sizeBtwn4n6 = btwn4n6.count()
     val averageBudgetBtwn4n6 = btwn4n6.keys.sum() / sizeBtwn4n6
     println("Average rating for profit between $10,000,000 - $50,000,000: " + averageBudgetBtwn4n6)
+
     //  avg rating btwn 500,000 - 10,000,000 (between 500k and 10mil)
     val under4= USMoviesandIncomeRatings
         .filter(_._2 >= 500000)
@@ -261,7 +264,6 @@ object App {
 
 
 
-  //takes about 7 min for 1500 test movies for reference
   def testRatingByActorsPredictions(numTestRecords: Int): Unit = {
     val result = movies.take(numTestRecords)
       .map({case (key, value) =>
@@ -328,16 +330,14 @@ object App {
     val avg = r._1*1.0/r._2
     result.map({case (key, value) => (avg, value)})
   }
-  def main(args: Array[String]): Unit = {
 
-    //averageIncomeHighRating(sc)
-    // Global profit for audience score over 8.0: 3.907898231388889E8
-    // Global profit for audience score between 6.0 and 8.0: 8.452461252132949E7
-    // Global profit for audience score between 4.0 and 6.0: 2.903742218363764E7
-    // Global profit for audience score under 4.0: 8560361.581460673
+
+  def main(args: Array[String]): Unit = {
+    findingTopRatedActors()
+    testRatingByActorsPredictions(100)
     averageBudgetRating()
-//    averageRatingBasedOnIncome()
-    //    predictingRatingsFromBudget()
-    //    findingTopRatedActors()
+    averageRatingBasedOnIncome()
+    predictingRatingsFromBudget()
+    predictingRatingsFromIncome()
   }
 }
