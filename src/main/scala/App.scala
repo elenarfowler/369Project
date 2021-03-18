@@ -31,11 +31,11 @@ object App {
       line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1)(5)))
 
   // statistics and stuff
-  def averageBudgetRating(sparkContext: SparkContext): Unit = {
+  def averageBudgetRating(): Unit = {
     //14=user rating, 16=budget 17=USgross 18=WorldGross (under movies)
     // setting up
     // rating, budget
-    val USMoviesandBudgetRatings = sparkContext.textFile("archive/movies.csv")
+    val USMoviesandBudgetRatings = sc.textFile("archive/movies.csv")
       .filter(line => line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1)(7).contains("USA"))
       .filter(line => line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1)(16).contains("$"))
       .filter(line => line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1)(3).toInt >= 2000)
@@ -72,12 +72,12 @@ object App {
   }
 
   //find average worldwide income of a highly rated movie (8+) (profits)
-  def averageIncomeHighRating(sparkContext: SparkContext): Unit = {
-    val USMoviesandIncomeRatings = sparkContext.textFile("archive/movies.csv")
+  //14 = rating 18 = world income
+  def averageIncomeHighRating(): Unit = {
+    val USMoviesandIncomeRatings = sc.textFile("archive/movies.csv")
       .filter(line => line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1)(7).contains("USA"))
       .filter(line => line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1)(18).contains("$"))
       .filter(line => line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1)(3).toInt >= 2000)
-      //      .filter(line => line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1)(14).toDouble >= 8.0)
       .map(line => (line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1)(14).trim().toDouble,
       line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1)(18).trim().replace("$", "").toDouble))
 
@@ -109,16 +109,55 @@ object App {
     val averageBudgetUnder4 = under4.values.sum() / sizeUnder4
     println("Global profit for audience score under 4.0: " + averageBudgetUnder4)
   }
-
-  // i realized idk what to do with this??
-  def averageIncometoBudget(sparkContext: SparkContext): Unit ={
-    val USMoviesandIncomeRatings = sparkContext.textFile("archive/movies.csv")
+  //find average rating based on income
+  //14 = rating 18 = world income
+  def averageRatingBasedOnIncome(): Unit = {
+    val USMoviesandIncomeRatings = sc.textFile("archive/movies.csv")
       .filter(line => line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1)(7).contains("USA"))
       .filter(line => line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1)(18).contains("$"))
       .filter(line => line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1)(3).toInt >= 2000)
-      .map(line => (line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1)(16).trim().replace("$", "").toDouble,
+      .map(line => (line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1)(14).trim().toDouble,
         line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1)(18).trim().replace("$", "").toDouble))
+
+    println("Average rating for movies based on profit")
+    // avg rating over 100,000,000 (100 million)
+    val over8 = USMoviesandIncomeRatings.filter(_._2 >= 100000000)
+    val sizeOver8 = over8.count()
+    val averageBudgetOver8 = over8.keys.sum() / sizeOver8
+    println("Average rating for profit over $100,000,000: " + averageBudgetOver8)
+    // avg rating btwn 50,000,000-100,000,000 (between 50mil and 100mil)
+    val btwn6n8 = USMoviesandIncomeRatings
+      .filter(_._2 >= 50000000)
+      .filter(_._2 < 100000000)
+    val sizeBtwn6n8 = btwn6n8.count()
+    val averageBudgetBtwn6n8 = btwn6n8.keys.sum() / sizeBtwn6n8
+    println("Average rating for profit between $50,000,000 - $100,000,000: " + averageBudgetBtwn6n8)
+//    avg rating btwn 10,000,000-50,000,000 (between 10mil and 50mil)
+    val btwn4n6 = USMoviesandIncomeRatings
+      .filter(_._2 >= 10000000)
+      .filter(_._2 < 50000000)
+    val sizeBtwn4n6 = btwn4n6.count()
+    val averageBudgetBtwn4n6 = btwn4n6.keys.sum() / sizeBtwn4n6
+    println("Average rating for profit between $10,000,000 - $50,000,000: " + averageBudgetBtwn4n6)
+    //  avg rating btwn 500,000 - 10,000,000 (between 500k and 10mil)
+    val under4= USMoviesandIncomeRatings
+        .filter(_._2 >= 500000)
+      .filter(_._2 < 10000000)
+
+    val sizeUnder4 = under4.count()
+    val averageBudgetUnder4 = under4.keys.sum() / sizeUnder4
+    println("Average rating for profit between $500,000 - $10,000,000: " + averageBudgetUnder4)
+
+    // avg rating under 500k
+    val under500= USMoviesandIncomeRatings
+      .filter(_._2 < 500000)
+
+    val sizeUnder500 = under500.count()
+    val averageBudgetUnder500 = under500.keys.sum() / sizeUnder500
+    println("Average rating for profit under $500k: " + averageBudgetUnder500)
+
   }
+
 
   def predictingRatingsFromBudget(): Unit = {
     // Getting the linear regression formula for predicting ratings
@@ -220,19 +259,7 @@ object App {
       .take(10).foreach(println(_))
   }
 
-  def main(args: Array[String]): Unit = {
 
-    averageIncomeHighRating(sc)
-    // Global profit for audience score over 8.0: 3.907898231388889E8
-    // Global profit for audience score between 6.0 and 8.0: 8.452461252132949E7
-    // Global profit for audience score between 4.0 and 6.0: 2.903742218363764E7
-    // Global profit for audience score under 4.0: 8560361.581460673
-
-    predictingRatingsFromBudget()
-    predictingRatingsFromIncome()
-    findingTopRatedActors()
-
-  }
 
   //takes about 7 min for 1500 test movies for reference
   def testRatingByActorsPredictions(numTestRecords: Int): Unit = {
@@ -301,6 +328,16 @@ object App {
     val avg = r._1*1.0/r._2
     result.map({case (key, value) => (avg, value)})
   }
+  def main(args: Array[String]): Unit = {
 
-
+    //averageIncomeHighRating(sc)
+    // Global profit for audience score over 8.0: 3.907898231388889E8
+    // Global profit for audience score between 6.0 and 8.0: 8.452461252132949E7
+    // Global profit for audience score between 4.0 and 6.0: 2.903742218363764E7
+    // Global profit for audience score under 4.0: 8560361.581460673
+    averageBudgetRating()
+//    averageRatingBasedOnIncome()
+    //    predictingRatingsFromBudget()
+    //    findingTopRatedActors()
+  }
 }
